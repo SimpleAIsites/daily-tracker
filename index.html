@@ -4,249 +4,369 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daily Intake Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: #f8f9fa; color: #212529; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-    .container { width: 100%; max-width: 720px; }
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    h1 { font-size: 1.25rem; margin: 0; }
-    button { cursor: pointer; border: 1px solid #ced4da; background: #fff; padding: 8px 12px; border-radius: 4px; font-weight: 600; }
-    button:hover { background: #e9ecef; }
+    /* Fixed container sizing so it never collapses */
+    .glass-cup {
+      width: 76px;
+      height: 130px;
+      position: relative;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 4px 4px 18px 18px;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      flex-shrink: 0;
+    }
     
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    .water-cup {
+      border: 3px solid #7dd3fc;
+    }
     
-    .card { background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
-    .card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
-    .card-head h2 { font-size: 1rem; margin: 0; }
-    .vessel-row { display: flex; gap: 12px; min-height: 180px; align-items: flex-end; justify-content: center; overflow-x: auto; padding: 10px 0; background: #fafafa; border: 1px solid #eee; border-radius: 4px; }
-    
-    .vessel { width: 70px; height: 140px; border: 2px solid #6c757d; border-radius: 0 0 10px 10px; position: relative; display: flex; align-items: flex-end; overflow: hidden; background: #fff; }
-    .water-fill { width: 100%; background: #0ea5e9; transition: height 0.2s ease; }
-    .cal-fill { width: 100%; background: #f59e0b; transition: height 0.2s ease; }
-    .vessel-label { font-size: 11px; text-align: center; margin-top: 4px; color: #6c757d; }
-    
-    .btn-row { display: flex; gap: 6px; margin-top: 12px; }
-    .btn-row button { flex: 1; }
-    .sub-link { font-size: 12px; color: #0d6efd; text-decoration: none; display: block; margin-top: 8px; text-align: right; }
-    .sub-link:hover { text-decoration: underline; }
+    .cal-cup {
+      border: 3px solid #fcd34d;
+    }
 
-    .checklist { background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 16px; }
-    .check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 10px; }
-    .check-item { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
-    .check-item input { width: 16px; height: 16px; cursor: pointer; }
+    .ticks {
+      position: absolute;
+      left: 3px;
+      top: 4px;
+      bottom: 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-size: 8px;
+      font-weight: 700;
+      user-select: none;
+      z-index: 10;
+      line-height: 1;
+    }
+
+    .water-ticks { color: #0284c7; }
+    .cal-ticks { color: #d97706; }
+
+    .shine {
+      position: absolute;
+      right: 4px;
+      top: 4px;
+      bottom: 4px;
+      width: 4px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 9999px;
+      pointer-events-none;
+      z-index: 10;
+    }
+
+    /* Wave animations */
+    @keyframes waveMotion {
+      0% { transform: translateX(0) scaleY(1); }
+      50% { transform: translateX(-25%) scaleY(0.9); }
+      100% { transform: translateX(-50%) scaleY(1); }
+    }
+    .wave-fluid {
+      animation: waveMotion 4s ease-in-out infinite;
+      position: absolute;
+      top: -6px;
+      left: 0;
+      width: 200%;
+      height: 12px;
+      border-radius: 9999px;
+    }
+
+    .liquid {
+      width: 100%;
+      position: relative;
+      transition: height 0.35s ease-out;
+      min-height: 0%;
+    }
+
+    .liquid-water {
+      background: linear-gradient(to top, #0284c7, #38bdf8);
+    }
+    .wave-water {
+      background: rgba(186, 230, 253, 0.6);
+    }
+
+    .liquid-cal {
+      background: linear-gradient(to top, #f59e0b, #fbbf24);
+    }
+    .wave-cal {
+      background: rgba(254, 240, 138, 0.6);
+    }
   </style>
 </head>
-<body>
+<body class="bg-slate-100 text-slate-800 min-h-screen p-3 sm:p-5 flex flex-col items-center justify-center">
 
-<div class="container">
-  <header>
-    <h1 id="dateDisplay">Tracker</h1>
-    <button id="resetBtn" style="color: #dc3545; border-color: #f5c2c7; background: #f8d7da;">Reset Day</button>
-  </header>
-
-  <div class="grid">
-    <!-- WATER -->
-    <div class="card">
-      <div>
-        <div class="card-head">
-          <h2>Water</h2>
-          <span id="waterStats" style="font-size: 13px; font-weight: 600;">0 / 64 fl oz</span>
-        </div>
-        <div id="waterContainer" class="vessel-row"></div>
-      </div>
-      <div class="btn-row">
-        <button id="addWaterBtn" style="background: #0ea5e9; color: #fff; border-color: #0284c7;">+ 10 fl oz</button>
-        <button id="undoWaterBtn" style="flex: 0 0 auto;">-10</button>
-      </div>
+  <div class="max-w-3xl w-full">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-3">
+      <h1 class="text-base font-bold text-slate-800" id="dateDisplay">Tracker</h1>
+      <button id="resetBtn" class="text-xs px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold rounded-lg border border-rose-200">
+        Reset Day
+      </button>
     </div>
 
-    <!-- CALORIES -->
-    <div class="card">
-      <div>
-        <div class="card-head">
-          <h2>Calories</h2>
-          <span id="calStats" style="font-size: 13px; font-weight: 600;">0 / 1800 kcal</span>
+    <!-- Main Dual Trackers -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+      
+      <!-- WATER TRACKER -->
+      <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-baseline mb-2">
+            <h2 class="text-sm font-bold text-slate-700">Water</h2>
+            <span id="waterStats" class="text-xs font-bold text-sky-600">0 / 64 fl oz</span>
+          </div>
+
+          <!-- Vessel Container -->
+          <div id="waterContainer" class="bg-sky-50/60 rounded-lg p-2.5 border border-sky-100 flex items-end justify-center gap-3 min-h-[160px] overflow-x-auto">
+            <!-- Cups injected here -->
+          </div>
         </div>
-        <div id="calContainer" class="vessel-row"></div>
+
+        <div class="flex gap-2 mt-3">
+          <button id="addWaterBtn" class="flex-1 py-2 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-lg text-xs transition">
+            + 10 fl oz
+          </button>
+          <button id="undoWaterBtn" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-lg text-xs transition">
+            -10
+          </button>
+        </div>
       </div>
-      <div>
-        <div class="btn-row">
-          <button onclick="addCalories(100)">+100</button>
-          <button onclick="addCalories(200)">+200</button>
-          <button onclick="addCalories(300)">+300</button>
-          <button onclick="addCalories(400)">+400</button>
-          <button onclick="addCalories(500)">+500</button>
+
+      <!-- CALORIE TRACKER -->
+      <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-baseline mb-2">
+            <h2 class="text-sm font-bold text-slate-700">Calories</h2>
+            <span id="calStats" class="text-xs font-bold text-amber-600">0 / 1,800 kcal</span>
+          </div>
+
+          <!-- Vessel Container -->
+          <div id="calContainer" class="bg-amber-50/60 rounded-lg p-2.5 border border-amber-100 flex items-end justify-center gap-3 min-h-[160px] overflow-x-auto">
+            <!-- Vessels injected here -->
+          </div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-          <button onclick="undoCalories()" style="padding: 4px 8px; font-size: 12px;">Undo -100</button>
-          <a class="sub-link" href="https://www.calorieking.com/us/en/foods/" target="_blank" rel="noopener noreferrer">Lookup Food Calories &rarr;</a>
+
+        <div class="mt-3 space-y-2">
+          <!-- Preset Buttons including +50 -->
+          <div class="grid grid-cols-6 gap-1">
+            <button onclick="addCalories(50)" class="py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs rounded transition">+50</button>
+            <button onclick="addCalories(100)" class="py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs rounded transition">+100</button>
+            <button onclick="addCalories(200)" class="py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs rounded transition">+200</button>
+            <button onclick="addCalories(300)" class="py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs rounded transition">+300</button>
+            <button onclick="addCalories(400)" class="py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs rounded transition">+400</button>
+            <button onclick="addCalories(500)" class="py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs rounded transition">+500</button>
+          </div>
+
+          <div class="flex justify-between items-center text-[11px] pt-0.5">
+            <button onclick="undoCalories()" class="text-slate-500 hover:text-slate-700 font-medium">Undo -50</button>
+            <a href="https://www.calorieking.com/us/en/foods/" target="_blank" rel="noopener noreferrer" class="text-amber-600 hover:underline font-semibold">
+              CalorieKing &rarr;
+            </a>
+          </div>
         </div>
+      </div>
+
+    </div>
+
+    <!-- SUPPLEMENTS CHECKLIST -->
+    <div class="bg-white rounded-xl p-3 border border-slate-200 shadow-xs">
+      <h2 class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Supplements</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer select-none">
+          <input type="checkbox" id="supp_fish_oil" class="w-4 h-4 rounded text-slate-800">
+          <span class="text-xs font-semibold text-slate-700">Fish Oil</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer select-none">
+          <input type="checkbox" id="supp_vitamins" class="w-4 h-4 rounded text-slate-800">
+          <span class="text-xs font-semibold text-slate-700">Vitamins</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer select-none">
+          <input type="checkbox" id="supp_fiber" class="w-4 h-4 rounded text-slate-800">
+          <span class="text-xs font-semibold text-slate-700">Fiber</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer select-none">
+          <input type="checkbox" id="supp_creatine" class="w-4 h-4 rounded text-slate-800">
+          <span class="text-xs font-semibold text-slate-700">Creatine</span>
+        </label>
       </div>
     </div>
   </div>
 
-  <!-- SUPPLEMENTS -->
-  <div class="checklist">
-    <h2 style="font-size: 14px; margin: 0 0 8px 0;">Supplements</h2>
-    <div class="check-grid">
-      <label class="check-item"><input type="checkbox" id="supp_fish_oil"> Fish Oil</label>
-      <label class="check-item"><input type="checkbox" id="supp_vitamins"> Vitamins</label>
-      <label class="check-item"><input type="checkbox" id="supp_fiber"> Fiber</label>
-      <label class="check-item"><input type="checkbox" id="supp_creatine"> Creatine</label>
-    </div>
-  </div>
-</div>
+  <script>
+    const STORAGE_KEY = 'daily_tracker_data';
+    const WATER_MAX = 64; // 0.5 gallon = 64 fl oz
+    const CAL_MAX = 1800;
 
-<script>
-  const STORAGE_KEY = 'daily_tracker_data';
-  const WATER_MAX = 64; // 0.5 gallon = 64 fl oz
-  const CAL_MAX = 1800;
-
-  let state = {
-    date: getTodayStr(),
-    waterOz: 0,
-    calories: 0,
-    supplements: { fish_oil: false, vitamins: false, fiber: false, creatine: false }
-  };
-
-  function getTodayStr() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-
-  function loadState() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const today = getTodayStr();
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (parsed.date === today) {
-          state = parsed;
-          return;
-        }
-      } catch (e) {}
-    }
-    resetState(today);
-  }
-
-  function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }
-
-  function resetState(date = getTodayStr()) {
-    state = {
-      date: date,
+    let state = {
+      date: getTodayStr(),
       waterOz: 0,
       calories: 0,
       supplements: { fish_oil: false, vitamins: false, fiber: false, creatine: false }
     };
-    saveState();
-  }
 
-  function addWater() {
-    state.waterOz += 10;
-    saveState();
-    renderWater();
-  }
-
-  function undoWater() {
-    state.waterOz = Math.max(0, state.waterOz - 10);
-    saveState();
-    renderWater();
-  }
-
-  function renderWater() {
-    document.getElementById('waterStats').textContent = `${state.waterOz} / ${WATER_MAX} fl oz`;
-    const box = document.getElementById('waterContainer');
-    box.innerHTML = '';
-
-    const count = Math.max(1, Math.ceil(state.waterOz / WATER_MAX));
-    for (let i = 0; i < count; i++) {
-      const current = Math.max(0, Math.min(WATER_MAX, state.waterOz - (i * WATER_MAX)));
-      const pct = Math.min(100, Math.round((current / WATER_MAX) * 100));
-
-      const wrapper = document.createElement('div');
-      wrapper.innerHTML = `
-        <div class="vessel"><div class="water-fill" style="height: ${pct}%;"></div></div>
-        <div class="vessel-label">${count > 1 ? `Cup #${i + 1}: ` : ''}${current} oz</div>
-      `;
-      box.appendChild(wrapper);
+    function getTodayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
-  }
 
-  function addCalories(n) {
-    state.calories += n;
-    saveState();
-    renderCalories();
-  }
-
-  function undoCalories() {
-    state.calories = Math.max(0, state.calories - 100);
-    saveState();
-    renderCalories();
-  }
-
-  function renderCalories() {
-    document.getElementById('calStats').textContent = `${state.calories} / ${CAL_MAX} kcal`;
-    const box = document.getElementById('calContainer');
-    box.innerHTML = '';
-
-    const count = Math.max(1, Math.ceil(state.calories / CAL_MAX));
-    for (let i = 0; i < count; i++) {
-      const current = Math.max(0, Math.min(CAL_MAX, state.calories - (i * CAL_MAX)));
-      const pct = Math.min(100, Math.round((current / CAL_MAX) * 100));
-
-      const wrapper = document.createElement('div');
-      wrapper.innerHTML = `
-        <div class="vessel" style="border-color: #b45309;"><div class="cal-fill" style="height: ${pct}%;"></div></div>
-        <div class="vessel-label">${count > 1 ? `Cup #${i + 1}: ` : ''}${current} kcal</div>
-      `;
-      box.appendChild(wrapper);
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const today = getTodayStr();
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed.date === today) {
+            state = parsed;
+            return;
+          }
+        } catch (e) {}
+      }
+      resetState(today);
     }
-  }
 
-  function renderSupplements() {
-    ['fish_oil', 'vitamins', 'fiber', 'creatine'].forEach(key => {
-      const el = document.getElementById(`supp_${key}`);
-      el.checked = !!state.supplements[key];
-      el.onchange = (e) => {
-        state.supplements[key] = e.target.checked;
-        saveState();
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function resetState(date = getTodayStr()) {
+      state = {
+        date: date,
+        waterOz: 0,
+        calories: 0,
+        supplements: { fish_oil: false, vitamins: false, fiber: false, creatine: false }
       };
-    });
-  }
+      saveState();
+    }
 
-  function checkMidnight() {
-    if (state.date !== getTodayStr()) {
+    function addWater() {
+      state.waterOz += 10;
+      saveState();
+      renderWater();
+    }
+
+    function undoWater() {
+      state.waterOz = Math.max(0, state.waterOz - 10);
+      saveState();
+      renderWater();
+    }
+
+    function renderWater() {
+      document.getElementById('waterStats').textContent = `${state.waterOz} / ${WATER_MAX} fl oz`;
+      const box = document.getElementById('waterContainer');
+      box.innerHTML = '';
+
+      const count = Math.max(1, Math.ceil(state.waterOz / WATER_MAX));
+      for (let i = 0; i < count; i++) {
+        const current = Math.max(0, Math.min(WATER_MAX, state.waterOz - (i * WATER_MAX)));
+        const pct = Math.min(100, Math.round((current / WATER_MAX) * 100));
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex flex-col items-center flex-shrink-0';
+        wrapper.innerHTML = `
+          <div class="glass-cup water-cup">
+            <div class="ticks water-ticks">
+              <span>64</span><span>48</span><span>32</span><span>16</span><span>0</span>
+            </div>
+            <div class="liquid liquid-water" style="height: ${pct}%;">
+              ${pct > 0 ? '<div class="wave-fluid wave-water"></div>' : ''}
+            </div>
+            <div class="shine"></div>
+          </div>
+          <span class="text-[10px] font-bold text-slate-500 mt-1">
+            ${count > 1 ? `Cup #${i + 1}: ` : ''}${current} oz
+          </span>
+        `;
+        box.appendChild(wrapper);
+      }
+    }
+
+    function addCalories(n) {
+      state.calories += n;
+      saveState();
+      renderCalories();
+    }
+
+    function undoCalories() {
+      state.calories = Math.max(0, state.calories - 50);
+      saveState();
+      renderCalories();
+    }
+
+    function renderCalories() {
+      document.getElementById('calStats').textContent = `${state.calories.toLocaleString()} / ${CAL_MAX.toLocaleString()} kcal`;
+      const box = document.getElementById('calContainer');
+      box.innerHTML = '';
+
+      const count = Math.max(1, Math.ceil(state.calories / CAL_MAX));
+      for (let i = 0; i < count; i++) {
+        const current = Math.max(0, Math.min(CAL_MAX, state.calories - (i * CAL_MAX)));
+        const pct = Math.min(100, Math.round((current / CAL_MAX) * 100));
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex flex-col items-center flex-shrink-0';
+        wrapper.innerHTML = `
+          <div class="glass-cup cal-cup">
+            <div class="ticks cal-ticks">
+              <span>1.8k</span><span>1.3k</span><span>900</span><span>450</span><span>0</span>
+            </div>
+            <div class="liquid liquid-cal" style="height: ${pct}%;">
+              ${pct > 0 ? '<div class="wave-fluid wave-cal"></div>' : ''}
+            </div>
+            <div class="shine"></div>
+          </div>
+          <span class="text-[10px] font-bold text-slate-500 mt-1">
+            ${count > 1 ? `Cup #${i + 1}: ` : ''}${current.toLocaleString()} kcal
+          </span>
+        `;
+        box.appendChild(wrapper);
+      }
+    }
+
+    function renderSupplements() {
+      ['fish_oil', 'vitamins', 'fiber', 'creatine'].forEach(key => {
+        const el = document.getElementById(`supp_${key}`);
+        el.checked = !!state.supplements[key];
+        el.onchange = (e) => {
+          state.supplements[key] = e.target.checked;
+          saveState();
+        };
+      });
+    }
+
+    function checkMidnight() {
+      if (state.date !== getTodayStr()) {
+        loadState();
+        renderAll();
+      }
+    }
+
+    function renderAll() {
+      document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      renderWater();
+      renderCalories();
+      renderSupplements();
+    }
+
+    window.onload = function() {
       loadState();
       renderAll();
-    }
-  }
 
-  function renderAll() {
-    document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-    renderWater();
-    renderCalories();
-    renderSupplements();
-  }
+      document.getElementById('addWaterBtn').onclick = addWater;
+      document.getElementById('undoWaterBtn').onclick = undoWater;
+      document.getElementById('resetBtn').onclick = () => {
+        if (confirm("Reset today's values?")) {
+          resetState();
+          renderAll();
+        }
+      };
 
-  window.onload = function() {
-    loadState();
-    renderAll();
-
-    document.getElementById('addWaterBtn').onclick = addWater;
-    document.getElementById('undoWaterBtn').onclick = undoWater;
-    document.getElementById('resetBtn').onclick = () => {
-      resetState();
-      renderAll();
+      setInterval(checkMidnight, 30000);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) checkMidnight();
+      });
     };
-
-    setInterval(checkMidnight, 30000);
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) checkMidnight();
-    });
-  };
-</script>
+  </script>
 </body>
 </html>
