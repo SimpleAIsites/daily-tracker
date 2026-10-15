@@ -3,742 +3,250 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily Flow — Simple Intake & Habits Tracker</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Canvas Confetti CDN for goal celebration -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+  <title>Daily Intake Tracker</title>
   <style>
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #f8f9fa; color: #212529; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    .container { width: 100%; max-width: 720px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    h1 { font-size: 1.25rem; margin: 0; }
+    button { cursor: pointer; border: 1px solid #ced4da; background: #fff; padding: 8px 12px; border-radius: 4px; font-weight: 600; }
+    button:hover { background: #e9ecef; }
+    
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    
+    .card { background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
+    .card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+    .card-head h2 { font-size: 1rem; margin: 0; }
+    .vessel-row { display: flex; gap: 12px; min-height: 180px; align-items: flex-end; justify-content: center; overflow-x: auto; padding: 10px 0; background: #fafafa; border: 1px solid #eee; border-radius: 4px; }
+    
+    .vessel { width: 70px; height: 140px; border: 2px solid #6c757d; border-radius: 0 0 10px 10px; position: relative; display: flex; align-items: flex-end; overflow: hidden; background: #fff; }
+    .water-fill { width: 100%; background: #0ea5e9; transition: height 0.2s ease; }
+    .cal-fill { width: 100%; background: #f59e0b; transition: height 0.2s ease; }
+    .vessel-label { font-size: 11px; text-align: center; margin-top: 4px; color: #6c757d; }
+    
+    .btn-row { display: flex; gap: 6px; margin-top: 12px; }
+    .btn-row button { flex: 1; }
+    .sub-link { font-size: 12px; color: #0d6efd; text-decoration: none; display: block; margin-top: 8px; text-align: right; }
+    .sub-link:hover { text-decoration: underline; }
 
-    /* Wave effect animation inside liquid vessels */
-    @keyframes waveMotion {
-      0% { transform: translateX(0) translateZ(0) scaleY(1); }
-      50% { transform: translateX(-25%) translateZ(0) scaleY(0.9); }
-      100% { transform: translateX(-50%) translateZ(0) scaleY(1); }
-    }
-
-    .wave-fluid {
-      animation: waveMotion 4s ease-in-out infinite;
-      transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* Energy pulse animation for calorie vessel */
-    @keyframes energyGlow {
-      0%, 100% { opacity: 0.9; }
-      50% { opacity: 1; filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.45)); }
-    }
-
-    .energy-glow {
-      animation: energyGlow 3s ease-in-out infinite;
-    }
-
-    /* Subtle pulse animation for buttons */
-    .tap-effect {
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
-    }
-    .tap-effect:active {
-      transform: scale(0.96);
-    }
-
-    /* Custom scrollbar styling */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f5f9;
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
+    .checklist { background: #fff; border: 1px solid #dee2e6; border-radius: 6px; padding: 16px; }
+    .check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 10px; }
+    .check-item { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+    .check-item input { width: 16px; height: 16px; cursor: pointer; }
   </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-sky-50/40 to-amber-50/30 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-sky-200">
+<body>
 
-  <!-- Header Banner -->
-  <header class="w-full bg-white/80 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 px-4 py-3 shadow-xs">
-    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center space-x-3">
-        <span class="text-3xl filter drop-shadow">🌱</span>
-        <div>
-          <h1 class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">Daily Flow</h1>
-          <p id="currentDateDisplay" class="text-xs text-slate-500 font-medium tracking-wide"></p>
-        </div>
-      </div>
-
-      <!-- Quick Action Buttons -->
-      <div class="flex items-center gap-2">
-        <button id="manualResetBtn" title="Reset Today's Numbers" class="text-xs px-2.5 py-1.5 font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition tap-effect">
-          Reset Today
-        </button>
-      </div>
-    </div>
+<div class="container">
+  <header>
+    <h1 id="dateDisplay">Tracker</h1>
+    <button id="resetBtn" style="color: #dc3545; border-color: #f5c2c7; background: #f8d7da;">Reset Day</button>
   </header>
 
-  <!-- Main Dual Tracker Grid -->
-  <main class="max-w-6xl w-full mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow">
-    
-    <!-- LEFT: WATER TRACKER -->
-    <section class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 flex flex-col justify-between hover:shadow-md transition">
+  <div class="grid">
+    <!-- WATER -->
+    <div class="card">
       <div>
-        <!-- Section Header -->
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <span class="w-10 h-10 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-xl font-bold">💧</span>
-            <div>
-              <h2 class="text-lg font-bold text-slate-800">Hydration</h2>
-              <p class="text-xs text-slate-500">Goal: 0.5 gal (~64 fl oz)</p>
-            </div>
-          </div>
-          <div class="text-right">
-            <span id="waterOzTotal" class="text-2xl font-black text-sky-600">0</span>
-            <span class="text-sm font-semibold text-slate-400">/ 64 fl oz</span>
-            <p id="waterGalSubtext" class="text-xs text-slate-400 font-medium">0.00 / 0.50 gal</p>
-          </div>
+        <div class="card-head">
+          <h2>Water</h2>
+          <span id="waterStats" style="font-size: 13px; font-weight: 600;">0 / 64 fl oz</span>
         </div>
-
-        <!-- Water Visual Container (Horizontally scrolls if overage cups exist) -->
-        <div class="bg-gradient-to-b from-sky-50/50 to-sky-100/30 rounded-2xl p-4 border border-sky-100/80 my-2">
-          <div id="cupsContainer" class="flex items-end justify-center gap-5 min-h-[220px] overflow-x-auto py-2">
-            <!-- Cups injected via JavaScript -->
-          </div>
-          <div class="text-center mt-2">
-            <span id="waterGoalBadge" class="inline-block text-xs font-bold px-3 py-1 rounded-full bg-sky-100 text-sky-700">
-              0% of daily goal reached
-            </span>
-          </div>
-        </div>
+        <div id="waterContainer" class="vessel-row"></div>
       </div>
-
-      <!-- Water Controls -->
-      <div class="mt-4 pt-4 border-t border-slate-100">
-        <div class="flex gap-2">
-          <button id="addWaterBtn" class="flex-1 py-3 px-4 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-bold text-sm tracking-wide shadow-md shadow-sky-500/20 transition tap-effect flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-            Add 10 fl oz Water
-          </button>
-          <button id="undoWaterBtn" title="Subtract 10 fl oz" class="py-3 px-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-sm transition tap-effect">
-            -10
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- RIGHT: CALORIES TRACKER -->
-    <section class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 flex flex-col justify-between hover:shadow-md transition">
-      <div>
-        <!-- Section Header -->
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <span class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl font-bold">⚡</span>
-            <div>
-              <h2 class="text-lg font-bold text-slate-800">Energy & Nutrition</h2>
-              <p class="text-xs text-slate-500">Target: 1,800 calories</p>
-            </div>
-          </div>
-          <div class="text-right">
-            <span id="calTotal" class="text-2xl font-black text-amber-600">0</span>
-            <span class="text-sm font-semibold text-slate-400">/ 1,800 kcal</span>
-            <p id="calRemainingText" class="text-xs text-slate-400 font-medium">1,800 kcal left</p>
-          </div>
-        </div>
-
-        <!-- Food / Energy Vessel Visual Container (Matching the Water visual layout) -->
-        <div class="bg-gradient-to-b from-amber-50/50 to-orange-100/30 rounded-2xl p-4 border border-amber-100/80 my-2">
-          <div id="calVesselsContainer" class="flex items-end justify-center gap-5 min-h-[220px] overflow-x-auto py-2">
-            <!-- Calorie Vessels injected via JavaScript -->
-          </div>
-          <div class="text-center mt-2">
-            <span id="calGoalBadge" class="inline-block text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-800">
-              0% of daily target reached
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Calorie Controls -->
-      <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
-        <!-- Preset Increment Buttons -->
-        <div class="grid grid-cols-5 gap-1.5">
-          <button onclick="addCalories(100)" class="py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs transition tap-effect">+100</button>
-          <button onclick="addCalories(200)" class="py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs transition tap-effect">+200</button>
-          <button onclick="addCalories(300)" class="py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs transition tap-effect">+300</button>
-          <button onclick="addCalories(400)" class="py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs transition tap-effect">+400</button>
-          <button onclick="addCalories(500)" class="py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs transition tap-effect">+500</button>
-        </div>
-
-        <!-- Custom Add & Undo -->
-        <div class="flex items-center gap-2">
-          <div class="relative flex-1">
-            <input type="number" id="customCalInput" placeholder="Custom kcal (e.g. 250)" min="1" max="5000" class="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-50/50">
-          </div>
-          <button id="addCustomCalBtn" class="py-2.5 px-3.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-900 text-white transition tap-effect">
-            Add
-          </button>
-          <button id="undoCalBtn" title="Undo -100 kcal" class="py-2.5 px-3 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition tap-effect">
-            -100
-          </button>
-        </div>
-
-        <!-- Calorie Lookup Link -->
-        <div class="flex items-center justify-between pt-1">
-          <span class="text-[11px] text-slate-400">Need accurate nutrition stats?</span>
-          <a href="https://www.calorieking.com/us/en/foods/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline">
-            <span>Lookup on CalorieKing</span>
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-          </a>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- BOTTOM: SUPPLEMENTS CHECKLIST -->
-  <section class="max-w-6xl w-full mx-auto px-4 pb-12">
-    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2">
-          <span class="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg font-bold">💊</span>
-          <div>
-            <h2 class="text-base font-bold text-slate-800">Daily Supplements Checklist</h2>
-            <p class="text-xs text-slate-500">Tap to check off today's stack</p>
-          </div>
-        </div>
-        <span id="supplementsSummary" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100">
-          0 of 4 completed
-        </span>
-      </div>
-
-      <!-- Checklist Cards Grid -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <!-- Fish Oil -->
-        <label class="cursor-pointer group flex items-center p-3 rounded-2xl border-2 border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/40">
-          <input type="checkbox" id="supp_fish_oil" class="supplement-checkbox w-5 h-5 rounded-lg text-emerald-600 focus:ring-emerald-500 border-slate-300 transition">
-          <div class="ml-3 select-none">
-            <p class="text-xs font-bold text-slate-800 group-has-[:checked]:text-emerald-900">Fish Oil</p>
-            <p class="text-[10px] text-slate-400">Omega-3 & Joint</p>
-          </div>
-        </label>
-
-        <!-- Vitamins -->
-        <label class="cursor-pointer group flex items-center p-3 rounded-2xl border-2 border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/40">
-          <input type="checkbox" id="supp_vitamins" class="supplement-checkbox w-5 h-5 rounded-lg text-emerald-600 focus:ring-emerald-500 border-slate-300 transition">
-          <div class="ml-3 select-none">
-            <p class="text-xs font-bold text-slate-800 group-has-[:checked]:text-emerald-900">Vitamins</p>
-            <p class="text-[10px] text-slate-400">Daily Multi / D3</p>
-          </div>
-        </label>
-
-        <!-- Fiber -->
-        <label class="cursor-pointer group flex items-center p-3 rounded-2xl border-2 border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/40">
-          <input type="checkbox" id="supp_fiber" class="supplement-checkbox w-5 h-5 rounded-lg text-emerald-600 focus:ring-emerald-500 border-slate-300 transition">
-          <div class="ml-3 select-none">
-            <p class="text-xs font-bold text-slate-800 group-has-[:checked]:text-emerald-900">Fiber</p>
-            <p class="text-[10px] text-slate-400">Gut & Digestion</p>
-          </div>
-        </label>
-
-        <!-- Creatine -->
-        <label class="cursor-pointer group flex items-center p-3 rounded-2xl border-2 border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/40">
-          <input type="checkbox" id="supp_creatine" class="supplement-checkbox w-5 h-5 rounded-lg text-emerald-600 focus:ring-emerald-500 border-slate-300 transition">
-          <div class="ml-3 select-none">
-            <p class="text-xs font-bold text-slate-800 group-has-[:checked]:text-emerald-900">Creatine</p>
-            <p class="text-[10px] text-slate-400">5g Strength & Brain</p>
-          </div>
-        </label>
+      <div class="btn-row">
+        <button id="addWaterBtn" style="background: #0ea5e9; color: #fff; border-color: #0284c7;">+ 10 fl oz</button>
+        <button id="undoWaterBtn" style="flex: 0 0 auto;">-10</button>
       </div>
     </div>
-  </section>
 
-  <!-- GitHub Pages Deployment Guide Modal -->
-  <div id="githubModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 relative">
-      <button id="closeGithubModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+    <!-- CALORIES -->
+    <div class="card">
+      <div>
+        <div class="card-head">
+          <h2>Calories</h2>
+          <span id="calStats" style="font-size: 13px; font-weight: 600;">0 / 1800 kcal</span>
         </div>
-        <div>
-          <h3 class="font-bold text-base text-slate-800">Deploy to GitHub Pages</h3>
-          <p class="text-xs text-slate-500">Host this tracker completely free in 3 quick steps</p>
-        </div>
+        <div id="calContainer" class="vessel-row"></div>
       </div>
-
-      <div class="space-y-3 text-xs text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-        <div class="flex gap-2.5">
-          <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center shrink-0">1</span>
-          <p>Create a new repository on GitHub (e.g., <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-slate-800">daily-tracker</code>).</p>
+      <div>
+        <div class="btn-row">
+          <button onclick="addCalories(100)">+100</button>
+          <button onclick="addCalories(200)">+200</button>
+          <button onclick="addCalories(300)">+300</button>
+          <button onclick="addCalories(400)">+400</button>
+          <button onclick="addCalories(500)">+500</button>
         </div>
-        <div class="flex gap-2.5">
-          <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center shrink-0">2</span>
-          <p>Create a file named <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-slate-800">index.html</code> in the repository root and paste this entire code file into it.</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+          <button onclick="undoCalories()" style="padding: 4px 8px; font-size: 12px;">Undo -100</button>
+          <a class="sub-link" href="https://www.calorieking.com/us/en/foods/" target="_blank" rel="noopener noreferrer">Lookup Food Calories &rarr;</a>
         </div>
-        <div class="flex gap-2.5">
-          <span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center shrink-0">3</span>
-          <p>Go to repository <strong>Settings &rarr; Pages</strong>. Under <em>Build and deployment &rarr; Branch</em>, select <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono">main</code> (or master) and folder <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono">/ (root)</code>, then click <strong>Save</strong>.</p>
-        </div>
-      </div>
-
-      <div class="mt-4 flex justify-end">
-        <button id="gotItBtn" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition">
-          Got it!
-        </button>
       </div>
     </div>
   </div>
 
-  <!-- Reset Confirmation Toast Modal -->
-  <div id="resetModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-xs w-full p-5 text-center shadow-xl border border-slate-100">
-      <span class="text-3xl">🔄</span>
-      <h3 class="font-bold text-slate-800 text-sm mt-2">Reset today's numbers?</h3>
-      <p class="text-xs text-slate-500 mt-1 mb-4">This will clear today's water, calorie and supplement marks.</p>
-      <div class="flex gap-2">
-        <button id="confirmResetBtn" class="flex-1 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition">Yes, reset</button>
-        <button id="cancelResetBtn" class="flex-1 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition">Cancel</button>
-      </div>
+  <!-- SUPPLEMENTS -->
+  <div class="checklist">
+    <h2 style="font-size: 14px; margin: 0 0 8px 0;">Supplements</h2>
+    <div class="check-grid">
+      <label class="check-item"><input type="checkbox" id="supp_fish_oil"> Fish Oil</label>
+      <label class="check-item"><input type="checkbox" id="supp_vitamins"> Vitamins</label>
+      <label class="check-item"><input type="checkbox" id="supp_fiber"> Fiber</label>
+      <label class="check-item"><input type="checkbox" id="supp_creatine"> Creatine</label>
     </div>
   </div>
+</div>
 
-  <!-- JavaScript Implementation -->
-  <script>
-    // Constants & Configuration
-    const STORAGE_KEY = 'daily_intake_tracker_data_v1';
-    const WATER_GOAL_OZ = 64; // 0.5 gallon = 64 fl oz
-    const WATER_INCREMENT_OZ = 10;
-    const CALORIE_GOAL = 1800;
+<script>
+  const STORAGE_KEY = 'daily_tracker_data';
+  const WATER_MAX = 64; // 0.5 gallon = 64 fl oz
+  const CAL_MAX = 1800;
 
-    // Encouraging messages pool
-    const ENCOURAGEMENTS = [
-      "Every sip and healthy bite counts towards feeling energized today!",
-      "Hydration and good nutrition fuel your daily performance. Keep it up!",
-      "Consistency is key! You are fueling your potential.",
-      "Halfway or almost there? Celebrate every step forward!",
-      "Balanced energy and solid hydration! You got this!"
-    ];
+  let state = {
+    date: getTodayStr(),
+    waterOz: 0,
+    calories: 0,
+    supplements: { fish_oil: false, vitamins: false, fiber: false, creatine: false }
+  };
 
-    // State structure
-    let state = {
-      date: getTodayDateString(),
+  function getTodayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function loadState() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const today = getTodayStr();
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.date === today) {
+          state = parsed;
+          return;
+        }
+      } catch (e) {}
+    }
+    resetState(today);
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function resetState(date = getTodayStr()) {
+    state = {
+      date: date,
       waterOz: 0,
       calories: 0,
-      supplements: {
-        fish_oil: false,
-        vitamins: false,
-        fiber: false,
-        creatine: false
-      },
-      celebratedWater: false,
-      celebratedCal: false
+      supplements: { fish_oil: false, vitamins: false, fiber: false, creatine: false }
     };
+    saveState();
+  }
 
-    // Helper: Formats today as YYYY-MM-DD local time string
-    function getTodayDateString() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+  function addWater() {
+    state.waterOz += 10;
+    saveState();
+    renderWater();
+  }
+
+  function undoWater() {
+    state.waterOz = Math.max(0, state.waterOz - 10);
+    saveState();
+    renderWater();
+  }
+
+  function renderWater() {
+    document.getElementById('waterStats').textContent = `${state.waterOz} / ${WATER_MAX} fl oz`;
+    const box = document.getElementById('waterContainer');
+    box.innerHTML = '';
+
+    const count = Math.max(1, Math.ceil(state.waterOz / WATER_MAX));
+    for (let i = 0; i < count; i++) {
+      const current = Math.max(0, Math.min(WATER_MAX, state.waterOz - (i * WATER_MAX)));
+      const pct = Math.min(100, Math.round((current / WATER_MAX) * 100));
+
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = `
+        <div class="vessel"><div class="water-fill" style="height: ${pct}%;"></div></div>
+        <div class="vessel-label">${count > 1 ? `Cup #${i + 1}: ` : ''}${current} oz</div>
+      `;
+      box.appendChild(wrapper);
     }
+  }
 
-    // Helper: Format nice readable header date
-    function renderHeaderDate() {
-      const options = { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' };
-      document.getElementById('currentDateDisplay').textContent = new Date().toLocaleDateString(undefined, options);
+  function addCalories(n) {
+    state.calories += n;
+    saveState();
+    renderCalories();
+  }
+
+  function undoCalories() {
+    state.calories = Math.max(0, state.calories - 100);
+    saveState();
+    renderCalories();
+  }
+
+  function renderCalories() {
+    document.getElementById('calStats').textContent = `${state.calories} / ${CAL_MAX} kcal`;
+    const box = document.getElementById('calContainer');
+    box.innerHTML = '';
+
+    const count = Math.max(1, Math.ceil(state.calories / CAL_MAX));
+    for (let i = 0; i < count; i++) {
+      const current = Math.max(0, Math.min(CAL_MAX, state.calories - (i * CAL_MAX)));
+      const pct = Math.min(100, Math.round((current / CAL_MAX) * 100));
+
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = `
+        <div class="vessel" style="border-color: #b45309;"><div class="cal-fill" style="height: ${pct}%;"></div></div>
+        <div class="vessel-label">${count > 1 ? `Cup #${i + 1}: ` : ''}${current} kcal</div>
+      `;
+      box.appendChild(wrapper);
     }
+  }
 
-    // Load from LocalStorage with automated midnight reset check
-    function loadState() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const today = getTodayDateString();
-
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          // Check if parsed date equals today
-          if (parsed.date === today) {
-            state = { ...state, ...parsed };
-            return;
-          }
-        } catch (e) {
-          console.error('Error reading localStorage', e);
-        }
-      }
-
-      // If no data exists or date has passed midnight -> reset to fresh today state
-      state = {
-        date: today,
-        waterOz: 0,
-        calories: 0,
-        supplements: {
-          fish_oil: false,
-          vitamins: false,
-          fiber: false,
-          creatine: false
-        },
-        celebratedWater: false,
-        celebratedCal: false
+  function renderSupplements() {
+    ['fish_oil', 'vitamins', 'fiber', 'creatine'].forEach(key => {
+      const el = document.getElementById(`supp_${key}`);
+      el.checked = !!state.supplements[key];
+      el.onchange = (e) => {
+        state.supplements[key] = e.target.checked;
+        saveState();
       };
-      saveState();
-    }
+    });
+  }
 
-    // Persist current state to LocalStorage
-    function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
-
-    // Trigger celebration confetti
-    function triggerConfetti() {
-      if (typeof confetti === 'function') {
-        confetti({
-          particleCount: 65,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      }
-    }
-
-    // Water Management
-    function addWater() {
-      state.waterOz += WATER_INCREMENT_OZ;
-      if (state.waterOz >= WATER_GOAL_OZ && !state.celebratedWater) {
-        state.celebratedWater = true;
-        triggerConfetti();
-      }
-      saveState();
-      renderWater();
-    }
-
-    function undoWater() {
-      state.waterOz = Math.max(0, state.waterOz - WATER_INCREMENT_OZ);
-      if (state.waterOz < WATER_GOAL_OZ) {
-        state.celebratedWater = false;
-      }
-      saveState();
-      renderWater();
-    }
-
-    // Render Water Cups & Stats
-    function renderWater() {
-      const oz = state.waterOz;
-      const gal = (oz / 128).toFixed(2);
-      
-      document.getElementById('waterOzTotal').textContent = oz;
-      document.getElementById('waterGalSubtext').textContent = `${gal} / 0.50 gal`;
-
-      // Percentage
-      const pct = Math.round((oz / WATER_GOAL_OZ) * 100);
-      const badge = document.getElementById('waterGoalBadge');
-      badge.textContent = `${pct}% of daily goal reached (${oz >= WATER_GOAL_OZ ? 'Goal Achieved! 💧🎉' : `${WATER_GOAL_OZ - oz} fl oz to go`})`;
-      
-      if (oz >= WATER_GOAL_OZ) {
-        badge.className = 'inline-block text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800';
-      } else {
-        badge.className = 'inline-block text-xs font-bold px-3 py-1 rounded-full bg-sky-100 text-sky-700';
-      }
-
-      // Render Visual Cups: Each cup holds up to 64 fl oz. If oz > 64, show additional cups!
-      const cupsContainer = document.getElementById('cupsContainer');
-      cupsContainer.innerHTML = '';
-
-      const numCups = Math.max(1, Math.ceil(oz / WATER_GOAL_OZ));
-
-      for (let i = 0; i < numCups; i++) {
-        // Calculate fluid in this specific cup (0 to 64 fl oz)
-        const currentCupOz = Math.max(0, Math.min(WATER_GOAL_OZ, oz - (i * WATER_GOAL_OZ)));
-        const cupPercent = Math.min(100, Math.round((currentCupOz / WATER_GOAL_OZ) * 100));
-
-        // Create visual glass element
-        const cupWrapper = document.createElement('div');
-        cupWrapper.className = 'flex flex-col items-center shrink-0 transition-all duration-300';
-
-        cupWrapper.innerHTML = `
-          <!-- Glass Cup Shape -->
-          <div class="relative w-28 h-40 bg-white/70 border-4 border-sky-300/60 rounded-b-3xl rounded-t-lg shadow-md overflow-hidden backdrop-blur-xs flex items-end">
-            <!-- Measurement ticks -->
-            <div class="absolute left-1 top-2 bottom-2 flex flex-col justify-between text-[8px] font-bold text-sky-400 select-none z-10 opacity-70">
-              <span>64oz</span>
-              <span>48oz</span>
-              <span>32oz</span>
-              <span>16oz</span>
-              <span>0</span>
-            </div>
-
-            <!-- Water Liquid -->
-            <div class="w-full bg-gradient-to-t from-sky-500 to-sky-400 relative transition-all duration-500 ease-out flex items-center justify-center" style="height: ${cupPercent}%;">
-              <!-- Wave graphic on liquid surface -->
-              ${cupPercent > 0 ? `
-              <div class="absolute -top-2 left-0 w-[200%] h-4 bg-sky-300/50 rounded-full wave-fluid"></div>
-              ` : ''}
-              
-              <!-- Subtle bubble particles -->
-              ${cupPercent > 20 ? '<span class="absolute text-[10px] animate-pulse">🫧</span>' : ''}
-            </div>
-
-            <!-- Inner Cup Glass Shine Reflection -->
-            <div class="absolute right-2 top-2 bottom-2 w-1.5 bg-white/40 rounded-full pointer-events-none"></div>
-          </div>
-          <span class="text-[11px] font-bold text-slate-600 mt-2">
-            ${numCups > 1 ? `Cup #${i + 1}: ${currentCupOz} oz` : `${currentCupOz} / 64 fl oz`}
-          </span>
-        `;
-
-        cupsContainer.appendChild(cupWrapper);
-      }
-    }
-
-    // Calories Management
-    function addCalories(amount) {
-      if (isNaN(amount) || amount <= 0) return;
-      state.calories += amount;
-      if (state.calories >= CALORIE_GOAL && !state.celebratedCal) {
-        state.celebratedCal = true;
-        triggerConfetti();
-      }
-      saveState();
-      renderCalories();
-    }
-
-    function undoCalories() {
-      state.calories = Math.max(0, state.calories - 100);
-      if (state.calories < CALORIE_GOAL) {
-        state.celebratedCal = false;
-      }
-      saveState();
-      renderCalories();
-    }
-
-    // Render Calories Fuel Vessel & Stats (Matching Water Cup aesthetic & overflow support)
-    function renderCalories() {
-      const kcal = state.calories;
-      document.getElementById('calTotal').textContent = kcal.toLocaleString();
-
-      const remaining = CALORIE_GOAL - kcal;
-      const remEl = document.getElementById('calRemainingText');
-      if (remaining > 0) {
-        remEl.textContent = `${remaining.toLocaleString()} kcal left`;
-        remEl.className = 'text-xs text-slate-400 font-medium';
-      } else if (remaining === 0) {
-        remEl.textContent = `Target reached exactly!`;
-        remEl.className = 'text-xs text-emerald-600 font-semibold';
-      } else {
-        remEl.textContent = `+${Math.abs(remaining).toLocaleString()} kcal extra`;
-        remEl.className = 'text-xs text-amber-700 font-semibold';
-      }
-
-      const pct = Math.round((kcal / CALORIE_GOAL) * 100);
-      const badge = document.getElementById('calGoalBadge');
-      badge.textContent = `${pct}% of daily target (${kcal.toLocaleString()} / ${CALORIE_GOAL.toLocaleString()} kcal)`;
-
-      if (kcal >= CALORIE_GOAL) {
-        badge.className = 'inline-block text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800';
-      } else {
-        badge.className = 'inline-block text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-800';
-      }
-
-      // Render Visual Energy Vessel: Each vessel holds up to 1,800 kcal.
-      // If kcal exceeds 1,800, additional vessels are spawned dynamically for overflow!
-      const vesselsContainer = document.getElementById('calVesselsContainer');
-      vesselsContainer.innerHTML = '';
-
-      const numVessels = Math.max(1, Math.ceil(kcal / CALORIE_GOAL));
-
-      for (let i = 0; i < numVessels; i++) {
-        // Calculate fluid in this specific vessel (0 to 1800 kcal)
-        const currentVesselKcal = Math.max(0, Math.min(CALORIE_GOAL, kcal - (i * CALORIE_GOAL)));
-        const vesselPercent = Math.min(100, Math.round((currentVesselKcal / CALORIE_GOAL) * 100));
-
-        // Create visual vessel container element
-        const vesselWrapper = document.createElement('div');
-        vesselWrapper.className = 'flex flex-col items-center shrink-0 transition-all duration-300';
-
-        const isOverFlowVessel = i > 0;
-
-        vesselWrapper.innerHTML = `
-          <!-- Energy Vessel Capsule / Glass -->
-          <div class="relative w-28 h-40 bg-white/70 border-4 ${isOverFlowVessel ? 'border-orange-300/80 ring-2 ring-orange-200' : 'border-amber-300/70'} rounded-b-3xl rounded-t-lg shadow-md overflow-hidden backdrop-blur-xs flex items-end">
-            
-            <!-- Measurement ticks -->
-            <div class="absolute left-1 top-2 bottom-2 flex flex-col justify-between text-[8px] font-bold text-amber-500/80 select-none z-10 opacity-75">
-              <span>1800</span>
-              <span>1350</span>
-              <span>900</span>
-              <span>450</span>
-              <span>0</span>
-            </div>
-
-            <!-- Energy Fluid -->
-            <div class="w-full bg-gradient-to-t ${isOverFlowVessel ? 'from-orange-600 via-amber-500 to-amber-400' : 'from-amber-500 via-amber-400 to-yellow-300'} energy-glow relative transition-all duration-500 ease-out flex items-center justify-center" style="height: ${vesselPercent}%;">
-              
-              <!-- Wave graphic on liquid surface -->
-              ${vesselPercent > 0 ? `
-              <div class="absolute -top-2 left-0 w-[200%] h-4 bg-amber-200/60 rounded-full wave-fluid"></div>
-              ` : ''}
-
-              <!-- Floating subtle energy sparkle -->
-              ${vesselPercent > 20 ? '<span class="absolute text-[10px] animate-pulse">⚡</span>' : ''}
-            </div>
-
-            <!-- Glass Reflection Highlight -->
-            <div class="absolute right-2 top-2 bottom-2 w-1.5 bg-white/40 rounded-full pointer-events-none"></div>
-          </div>
-
-          <!-- Vessel Label -->
-          <span class="text-[11px] font-bold text-slate-600 mt-2">
-            ${numVessels > 1 ? `Vessel #${i + 1}: ${currentVesselKcal.toLocaleString()} kcal` : `${currentVesselKcal.toLocaleString()} / 1,800 kcal`}
-          </span>
-        `;
-
-        vesselsContainer.appendChild(vesselWrapper);
-      }
-    }
-
-    // Supplements Management
-    function setupSupplements() {
-      const checkboxes = document.querySelectorAll('.supplement-checkbox');
-      checkboxes.forEach(cb => {
-        const key = cb.id.replace('supp_', '');
-        cb.checked = !!state.supplements[key];
-
-        cb.addEventListener('change', (e) => {
-          state.supplements[key] = e.target.checked;
-          saveState();
-          renderSupplementsSummary();
-
-          // Celebration if all 4 are completed
-          const allDone = Object.values(state.supplements).every(v => v === true);
-          if (allDone) {
-            triggerConfetti();
-          }
-        });
-      });
-      renderSupplementsSummary();
-    }
-
-    function renderSupplementsSummary() {
-      const total = Object.keys(state.supplements).length;
-      const completed = Object.values(state.supplements).filter(Boolean).length;
-      const el = document.getElementById('supplementsSummary');
-      el.textContent = `${completed} of ${total} completed`;
-
-      if (completed === total) {
-        el.className = 'text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-500 text-white shadow-xs';
-      } else {
-        el.className = 'text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100';
-      }
-    }
-
-    // Check at interval or visibility change if day switched to reset at midnight
-    function setupMidnightResetWatcher() {
-      // Periodic check every 30 seconds
-      setInterval(() => {
-        const currentToday = getTodayDateString();
-        if (state.date !== currentToday) {
-          loadState();
-          renderAll();
-        }
-      }, 30000);
-
-      // Also check whenever user switches back to browser tab
-      document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-          const currentToday = getTodayDateString();
-          if (state.date !== currentToday) {
-            loadState();
-            renderAll();
-          }
-        }
-      });
-    }
-
-    // Master Render
-    function renderAll() {
-      renderHeaderDate();
-      renderWater();
-      renderCalories();
-      setupSupplements();
-
-      // Pick encouraging quote based on today's seed
-      const quoteIndex = new Date().getDate() % ENCOURAGEMENTS.length;
-      document.getElementById('encouragementText').textContent = ENCOURAGEMENTS[quoteIndex];
-    }
-
-    // Event Listeners Initialization
-    window.onload = function() {
+  function checkMidnight() {
+    if (state.date !== getTodayStr()) {
       loadState();
       renderAll();
-      setupMidnightResetWatcher();
+    }
+  }
 
-      // Water buttons
-      document.getElementById('addWaterBtn').addEventListener('click', addWater);
-      document.getElementById('undoWaterBtn').addEventListener('click', undoWater);
+  function renderAll() {
+    document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    renderWater();
+    renderCalories();
+    renderSupplements();
+  }
 
-      // Calorie custom inputs
-      document.getElementById('addCustomCalBtn').addEventListener('click', () => {
-        const inp = document.getElementById('customCalInput');
-        const val = parseInt(inp.value, 10);
-        if (val && val > 0) {
-          addCalories(val);
-          inp.value = '';
-        }
-      });
+  window.onload = function() {
+    loadState();
+    renderAll();
 
-      document.getElementById('customCalInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          const val = parseInt(e.target.value, 10);
-          if (val && val > 0) {
-            addCalories(val);
-            e.target.value = '';
-          }
-        }
-      });
-
-      document.getElementById('undoCalBtn').addEventListener('click', undoCalories);
-
-      // Modals Logic (GitHub Pages Guide & Reset Dialog)
-      const githubModal = document.getElementById('githubModal');
-      document.getElementById('openGithubModalBtn').addEventListener('click', () => githubModal.classList.remove('hidden'));
-      document.getElementById('closeGithubModalBtn').addEventListener('click', () => githubModal.classList.add('hidden'));
-      document.getElementById('gotItBtn').addEventListener('click', () => githubModal.classList.add('hidden'));
-
-      const resetModal = document.getElementById('resetModal');
-      document.getElementById('manualResetBtn').addEventListener('click', () => resetModal.classList.remove('hidden'));
-      document.getElementById('cancelResetBtn').addEventListener('click', () => resetModal.classList.add('hidden'));
-      document.getElementById('confirmResetBtn').addEventListener('click', () => {
-        state = {
-          date: getTodayDateString(),
-          waterOz: 0,
-          calories: 0,
-          supplements: {
-            fish_oil: false,
-            vitamins: false,
-            fiber: false,
-            creatine: false
-          },
-          celebratedWater: false,
-          celebratedCal: false
-        };
-        saveState();
-        renderAll();
-        resetModal.classList.add('hidden');
-      });
+    document.getElementById('addWaterBtn').onclick = addWater;
+    document.getElementById('undoWaterBtn').onclick = undoWater;
+    document.getElementById('resetBtn').onclick = () => {
+      resetState();
+      renderAll();
     };
-  </script>
+
+    setInterval(checkMidnight, 30000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) checkMidnight();
+    });
+  };
+</script>
 </body>
 </html>
